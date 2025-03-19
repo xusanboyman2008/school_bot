@@ -2,7 +2,7 @@ import asyncio
 
 import pytz
 from aiogram import Bot, Dispatcher, F
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -17,7 +17,7 @@ from request_login import login_main, login
 
 # Load sensitive data from environment variables (use dotenv or similar library)
 # BOT_TOKEN = "7894961736:AAGwAqAzmoMdUYye1-CuU9sf5Db-iKeVdmQ"
-BOT_TOKEN = "7374450108:AAGv4WDRPj3Ju1STcnr3m9-CDwni8tL_77o"
+BOT_TOKEN = "7374450108:AAHLEWYlu6R66PUUS2KgPfYotICYa6O7DL8"
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 UZBEKISTAN_TZ = pytz.timezone("Asia/Tashkent")
@@ -272,7 +272,7 @@ import logging
 async def send_daily_update():
     log = await login()
     user_ids = await get_users()
-
+    print(log)
     if not log or not log[0]:  # If there are no failed logins, return
         logging.info("No failed logins detected. Skipping message sending.")
         return
@@ -302,11 +302,15 @@ async def send_daily_update():
     # Iterate over users
     for user_id in user_ids:
         try:
+            chat = await bot.get_chat(user_id.tg_id)
+            print(chat.permissions)
+            await bot.send_message(chat_id=int(user_id.tg_id), text="Test message")
             message = ""
             user_school = int(user_id.school_number) if user_id.school_number and user_id.school_number.isdigit() else None
             if user_id.role == 'Superuser':
                 total_failed = sum(len(v['student']) + len(v['parent']) for v in school_logins.values())
-                if total_failed==0:
+                print('Superuser',user_id.tg_id)
+                if not total_failed:
                     continue
 
                 message += f"❌ Umumiy muvaffaqiyatsiz loginlar soni: {total_failed}\n"
@@ -353,6 +357,7 @@ async def send_daily_update():
                     continue  # Skip if no failed logins for their school
             elif user_id.role == 'User':
                 if user_school in school_logins:
+                    print('user2',user_id.tg_id)
                     student_count = len(school_logins[user_school]["student"])
                     parent_count = len(school_logins[user_school]["parent"])
                     total_count = student_count + parent_count
@@ -375,9 +380,8 @@ async def send_daily_update():
                         )
                 else:
                     continue  # Skip if no failed logins for their school
-        except TelegramBadRequest as e:
-            logging.warning(f"Failed to send message to {user_id.tg_id}: {e}")
-            continue
+        except TelegramForbiddenError as e:
+            pass
 
 
 @dp.message(F.text == 'login')
@@ -429,6 +433,20 @@ async def clear(message: Message):
             break
 
 
+@dp.message(F.text == "users")
+async def users(message: Message):
+    admin = await get_admin(message.from_user.id)
+    if admin:
+        text1 = f"{await get_users_all()}"
+        await message.answer(text=text1, parse_mode="Markdown")
+async def test_bot():
+    try:
+        await bot.send_message(chat_id=6588631008, text="Hello, this is a test!")
+        print("✅ Message sent successfully!")
+    except Exception as e:
+        print(f"❌ Failed to send message: {e}")
+
+
 async def main2():
     scheduler.add_job(
         send_daily_update,
@@ -438,7 +456,7 @@ async def main2():
         timezone=UZBEKISTAN_TZ,
     )
     await init()
-    scheduler.start()
+    # scheduler.start()
     # keep_alive()
     await dp.start_polling(bot, skip_updates=True)
 

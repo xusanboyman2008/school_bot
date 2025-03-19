@@ -28,14 +28,12 @@ async def login():
     async with aiohttp.ClientSession() as session:
         tasks = [login_request(session, login) for login in logins]
         results = await asyncio.gather(*tasks)
-        print(results)
     for login_data in results:
         login, password, status, school_number,type = login_data
         if not status:
             wrong_logins += f"🔑 Login: {login} | Password: {password}_{school_number}_{type}\n,"
         else:
             l += 1
-    print('wro',wrong_logins)
     return wrong_logins, l
 
 
