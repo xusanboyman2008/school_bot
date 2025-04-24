@@ -7,9 +7,10 @@ from models import create_login, get_login1
 url = "https://login.emaktab.uz"
 headers = {
     "Content-Type": "application/x-www-form-urlencoded",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/122.0.0.0 Safari/537.36"
 }
-
-
 async def login_request(session, login):
     """Helper function to perform a single login request"""
     async with session.post(url, headers=headers, data={"login": login.login, "password": login.password}) as response:

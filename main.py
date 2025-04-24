@@ -1,8 +1,9 @@
 import asyncio
+import math
 
 import pytz
 from aiogram import Bot, Dispatcher, F
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -10,7 +11,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from keep_alive import keep_alive
 from models import get_users, create_user, get_login1, get_users_all, get_user, make_admin
 from models import init, get_admin, change_school_number
 from request_login import login_main, login
@@ -87,7 +87,7 @@ async def start(message: Message, state: FSMContext):
             reply_markup=school_keyboard()
         )
         return
-    await message.answer(text='⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀🏠 *Menu*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀',parse_mode='Markdown', reply_markup=menu())
+    await message.answer(text='⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀🏠 *Menu*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀', parse_mode='Markdown', reply_markup=menu())
 
 
 @dp.callback_query(F.data.startswith('menu'))
@@ -219,7 +219,6 @@ async def add(message: Message, state: FSMContext):
                              ))
 
 
-
 @dp.callback_query(F.data.startswith("t_"))
 async def t_yes(callback_data: CallbackQuery):
     data = callback_data.data.split("t_")[1]
@@ -244,6 +243,19 @@ async def admin(message: Message):
     await message.answer('You are admin now')
 
 
+async def send_long_message(message, text):
+    # Maximum length of a message (Telegram limit)
+    max_length = 4096
+    # Split the message if it's too long
+    num_parts = math.ceil(len(text) / max_length)
+
+    for i in range(num_parts):
+        start = i * max_length
+        end = start + max_length
+        part = text[start:end]
+        await message.answer(f"<code>{part.strip()}</code>", parse_mode="HTML")
+
+
 @dp.message(F.text == "data")
 async def data(message: Message):
     user = await get_admin(message.from_user.id)
@@ -254,7 +266,7 @@ async def data(message: Message):
     text = ''
     for i in data:
         text += f"{i.login}:{i.password}:{i.school_number},\n"
-    await message.answer(text=f"<code>{text}</code>", parse_mode="HTML")
+    await send_long_message(message, text)
 
 
 @dp.message(F.text == "/help")
@@ -266,8 +278,26 @@ async def help(message: Message):
 
 scheduler = AsyncIOScheduler()
 
-
 import logging
+
+
+async def send_long_message_by_id(tg_id, text, inline=False):
+    # Maximum length of a message (Telegram limit)
+    max_length = 4096
+    # Split the message if it's too long
+    num_parts = math.ceil(len(text) / max_length)
+
+    for i in range(num_parts):
+        start = i * max_length
+        end = start + max_length
+        part = text[start:end]
+        if inline:
+            await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown",
+                                   reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                                       [InlineKeyboardButton(text='🚫 O‘chirish', callback_data='t_no')]
+                                   ]))
+        await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown")
+
 
 async def send_daily_update():
     log = await login()
@@ -304,12 +334,12 @@ async def send_daily_update():
         try:
             chat = await bot.get_chat(user_id.tg_id)
             print(chat.permissions)
-            await bot.send_message(chat_id=int(user_id.tg_id), text="Test message")
             message = ""
-            user_school = int(user_id.school_number) if user_id.school_number and user_id.school_number.isdigit() else None
+            user_school = int(
+                user_id.school_number) if user_id.school_number and user_id.school_number.isdigit() else None
             if user_id.role == 'Superuser':
                 total_failed = sum(len(v['student']) + len(v['parent']) for v in school_logins.values())
-                print('Superuser',user_id.tg_id)
+                print('Superuser', user_id.tg_id)
                 if not total_failed:
                     continue
 
@@ -329,15 +359,13 @@ async def send_daily_update():
                             message += f"👨‍👩‍👧‍👦 Ota-onalar: {parent_count} ta login\n" + "\n".join(
                                 login_data["parent"]) + "\n\n"
                 if message:  # Only send message if there is failed login data
-                    await bot.send_message(
-                        chat_id=user_id.tg_id,
-                        text=message,parse_mode="Markdown")
+                    await send_long_message_by_id(tg_id=user_id.tg_id, text=message)
             elif user_id.role == 'Admin':
                 if user_school in school_logins:
                     student_logins = school_logins[user_school]["student"]
                     parent_logins = school_logins[user_school]["parent"]
                     total_failed = len(student_logins) + len(parent_logins)
-                    if total_failed==0:
+                    if total_failed == 0:
                         continue
 
                     message += f"❌ Muvaffaqiyatsiz loginlar soni: {total_failed}\n"
@@ -349,20 +377,20 @@ async def send_daily_update():
                     if parent_logins:
                         message += "👨‍👩‍👧‍👦 Ota-ona loginlari:\n" + "\n".join(parent_logins) + "\n\n"
                 if message:  # Only send message if there is failed login data
-                    await bot.send_message(
-                        chat_id=user_id.tg_id,
-                        text=message,parse_mode="Markdown"
+                    await send_long_message_by_id(
+                        tg_id=user_id.tg_id,
+                        text=message
                     )
                 else:
                     continue  # Skip if no failed logins for their school
             elif user_id.role == 'User':
                 if user_school in school_logins:
-                    print('user2',user_id.tg_id)
+                    print('user2', user_id.tg_id)
                     student_count = len(school_logins[user_school]["student"])
                     parent_count = len(school_logins[user_school]["parent"])
                     total_count = student_count + parent_count
 
-                    if student_count==0 and parent_count==0:
+                    if student_count == 0 and parent_count == 0:
                         continue
 
                     message += f"❌ Maktabingizdagi muvaffaqiyatsiz loginlar soni: {total_count}\n"
@@ -371,12 +399,9 @@ async def send_daily_update():
                     if parent_count:
                         message += f"👨‍👩‍👧‍👦 Ota-onalar: {parent_count} ta\n"
                     if message:  # Only send message if there is failed login data
-                        await bot.send_message(
-                            chat_id=user_id.tg_id,
-                            text=message,parse_mode='Markdown',
-                            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                [InlineKeyboardButton(text='🚫 O‘chirish', callback_data='t_no')]
-                            ])
+                        await send_long_message_by_id(
+                            tg_id=user_id.tg_id,
+                            text=message, inline=True
                         )
                 else:
                     continue  # Skip if no failed logins for their school
@@ -439,6 +464,8 @@ async def users(message: Message):
     if admin:
         text1 = f"{await get_users_all()}"
         await message.answer(text=text1, parse_mode="Markdown")
+
+
 async def test_bot():
     try:
         await bot.send_message(chat_id=6588631008, text="Hello, this is a test!")
