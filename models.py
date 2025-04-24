@@ -159,6 +159,7 @@ async def delete_login(login):
         async with session.begin():
             data = await session.execute(select(Login).where(Login.login == login))
             l = data.scalar_one_or_none()
+            print(l.login,l.id)
             if l:
                 await session.delete(l)
                 return True

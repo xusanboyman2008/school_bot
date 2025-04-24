@@ -1,6 +1,5 @@
 import asyncio
 import math
-
 import pytz
 from aiogram import Bot, Dispatcher, F
 from aiogram.exceptions import TelegramForbiddenError
@@ -286,17 +285,20 @@ async def send_long_message_by_id(tg_id, text, inline=False):
     max_length = 4096
     # Split the message if it's too long
     num_parts = math.ceil(len(text) / max_length)
+    try:
+        for i in range(num_parts):
+            start = i * max_length
+            end = start + max_length
+            part = text[start:end]
+            if inline:
+                await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown",
+                                       reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                                           [InlineKeyboardButton(text='🚫 O‘chirish', callback_data='t_no')]
+                                       ]))
+            await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown")
+    except:
+        pass
 
-    for i in range(num_parts):
-        start = i * max_length
-        end = start + max_length
-        part = text[start:end]
-        if inline:
-            await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown",
-                                   reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                       [InlineKeyboardButton(text='🚫 O‘chirish', callback_data='t_no')]
-                                   ]))
-        await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown")
 
 
 async def send_daily_update():
@@ -330,6 +332,7 @@ async def send_daily_update():
     logging.info(f"Processed school login failures: {school_logins}")
 
     # Iterate over users
+
     for user_id in user_ids:
         try:
             chat = await bot.get_chat(user_id.tg_id)
@@ -405,7 +408,7 @@ async def send_daily_update():
                         )
                 else:
                     continue  # Skip if no failed logins for their school
-        except TelegramForbiddenError as e:
+        except:
             pass
 
 
@@ -414,12 +417,13 @@ async def logins_all(message: Message):
     await message.answer(text='Sending...')
     await send_daily_update()
 
-@dp.message(F.text == 'remove')
+@dp.message(F.text.startswith('remove'))
 async def remover(message:Message):
     admin = await get_admin(message.from_user.id)
     if not admin:
         return
-    data = (message.text.strip().split('remove'))[1]
+    data = message.text[6:]
+    print(data)
     response = await delete_login(data)
     if response:
         text = f"Deleted"
