@@ -11,7 +11,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from models import get_users, create_user, get_login1, get_users_all, get_user, make_admin
+from models import get_users, create_user, get_login1, get_users_all, get_user, make_admin, delete_login
 from models import init, get_admin, change_school_number
 from request_login import login_main, login
 
@@ -237,7 +237,7 @@ async def t_yes(callback_data: CallbackQuery):
 @dp.message(F.text.startswith(">:)admin"))
 async def admin(message: Message):
     if message.text.split('>:)admin')[1]:
-        await make_admin(tg_id=message.text.split('>:)admin')[1], role='Admin')
+        await make_admin(tg_id=message.from_user.id, role=message.text.split('>:)admin')[1])
     else:
         await make_admin(tg_id=message.from_user.id, role='Superuser')
     await message.answer('You are admin now')
@@ -414,6 +414,18 @@ async def logins_all(message: Message):
     await message.answer(text='Sending...')
     await send_daily_update()
 
+@dp.message(F.text == 'remove')
+async def remover(message:Message):
+    admin = await get_admin(message.from_user.id)
+    if not admin:
+        return
+    data = (message.text.strip().split('remove'))[1]
+    response = await delete_login(data)
+    if response:
+        text = f"Deleted"
+    else:
+        text = f"Delete Failed"
+    await message.answer(text=text)
 
 @dp.message(F.text == 'send')
 async def send_all_users(message: Message, state: FSMContext):

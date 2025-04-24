@@ -154,6 +154,19 @@ async def get_login1():
         return logins
 
 
+async def delete_login(login):
+    async with async_session() as session:
+        async with session.begin():
+            data = await session.execute(select(Login).where(Login.login == login))
+            l = data.scalar_one_or_none()
+            if l:
+                await session.delete(l)
+                await session.commit()
+                return True
+            await session.commit()
+            return False
+
+
 async def create_login(login: str, password: str, status: bool, school_number: int, type: str):
     async with async_session() as session:
         async with session.begin():
