@@ -161,9 +161,7 @@ async def delete_login(login):
             l = data.scalar_one_or_none()
             if l:
                 await session.delete(l)
-                await session.commit()
                 return True
-            await session.commit()
             return False
 
 
