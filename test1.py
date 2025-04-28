@@ -1,53 +1,65 @@
-import aiohttp
-import asyncio
+import io
+import time
+import requests
+from PIL import Image
+import pytesseract
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-from models import create_login
+# --- 1) Headless Chrome setup ---
+opts = Options()
+opts.add_argument("--headless")
+opts.add_argument("--disable-gpu")
+opts.add_argument("--window-size=1280,1024")
 
-headers = {
-    "Content-Type": "application/x-www-form-urlencoded",
-}
+driver = webdriver.Chrome(options=opts)
+driver.get("https://login.emaktab.uz/")
 
-# Define the login URL
-LOGIN_URL = "https://login.emaktab.uz/"
+try:
+    wait = WebDriverWait(driver, 20)
 
-async def login_request(session, login):
-    """Helper function to perform a single login request"""
-    async with session.post(LOGIN_URL, headers=headers, data={"login": login["login"], "password": login["password"]}) as response:
-        status = len(response.cookies) == 4  # Fixed logic
-        await create_login(
-            login=login["login"], password=login["password"],
-            status=status, school_number=login.get("school_number"), type=login.get("type")
-        )
-        if not status:
-            return login["login"], login["password"], status, login.get("school_number"), login.get("type")
-        return login["login"], login["password"], status, login.get("school_number"), login.get("type")
+    # --- 2) Wait until ANY <img> with "captcha" in its src appears ---
+    wait.until(lambda d: any(
+        img.get_attribute("src") and "captcha" in img.get_attribute("src").lower()
+        for img in d.find_elements(By.TAG_NAME, "img")
+    ))
 
-async def login():
-    wrong_logins = ''
-    logins = [{"password": "12345678x", "login": "xusanboyabdulxayev"}]  # Changed to list of dicts
-    l = 0
+    captcha_el = next(
+        img for img in driver.find_elements(By.TAG_NAME, "img")
+        if img.get_attribute("src") and "captcha" in img.get_attribute("src").lower()
+    )
+    captcha_url = captcha_el.get_attribute("src")
+    if captcha_url.startswith("/"):
+        captcha_url = "https://login.emaktab.uz" + captcha_url
 
-    async with aiohttp.ClientSession() as session:
-        tasks = [login_request(session, login) for login in logins]
-        results = await asyncio.gather(*tasks)
+    # --- 4) Transfer cookies into requests.Session() ---
+    sess = requests.Session()
+    for c in driver.get_cookies():
+        sess.cookies.set(c['name'], c['value'])
 
-    for login_data in results:
-        print(login_data)
-        if login_data:  # Ensure we don't unpack None
-            login, password, status, school_number, type_ = login_data
-            if not status:
-                wrong_logins += f"🔑 Login: {login} | Password: {password} | School: {school_number} | Type: {type_}\n"
-            else:
-                l += 1
-    print('asda',wrong_logins,l)
-    return wrong_logins, l
+    # --- 5) Download the CAPTCHA image ---
+    img_resp = sess.get(captcha_url)
+    img = Image.open(io.BytesIO(img_resp.content))
+    img.save("captcha_debug.png")  # debug: inspect this file if needed
 
-async def main():
-    wrong_logins, success_count = await login()
-    if wrong_logins:
-        print("Login failed for:\n", wrong_logins)
+    code =
+    print(f"[+] OCR’d CAPTCHA: {code}")
+
+    # --- 7) Fill form & submit ---
+    driver.find_element(By.NAME, "login").send_keys("mamayusupovaziyodaxo")
+    driver.find_element(By.NAME, "password").send_keys("12345678")
+    driver.find_element(By.NAME, "captcha").send_keys(code)
+    driver.find_element(By.CLASS_NAME, "login_btn").click()
+
+    # --- 8) Verify success ---
+    time.sleep(3)
+    if "logout" in driver.page_source.lower():
+        print("[✅] Login successful!")
     else:
-        print(f"All logins successful! ({success_count} logins)")
+        print("[❌] Login may have failed – check page content.")
 
-# Run the async main function
-asyncio.run(main())
+finally:
+    driver.quit()

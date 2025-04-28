@@ -5,7 +5,7 @@ from sqlalchemy.orm import DeclarativeBase
 # DATABASE_URL = "postgresql+asyncpg://school_api_3_user:lIlmLBoVtBcD6yqJ3AAIFVPsFgi5GkQy@dpg-cuaqparqf0us73cat8fg-a.oregon-postgres.render.com/school_api_3"
 # DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_RkIy9Ctf5bph@ep-fragrant-butterfly-a8t65nyw-pooler.eastus2.azure.neon.tech/neondb"
 # DATABASE_URL = "sqlite+aiosqlite:///database.sqlite3"
-DATABASE_URL = "postgresql+asyncpg://postgres.wutuakdgbhffcpxcjsin:Mymodlyu0@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL = "postgresql+asyncpg://postgres:glirssAFCHocXjgoXkNezMEUtrznCQsl@nozomi.proxy.rlwy.net:49231/railway"
 engine = create_async_engine(DATABASE_URL)
 async_session = async_sessionmaker(engine)
 
@@ -81,9 +81,24 @@ async def create_user(tg_id,name, sending=None, role='User'):
         if user:
             if sending != 'org':
                 user.sending = sending
-
         else:
             user = User(tg_id=tg_id, sending=sending, name=name, school_number=None, role=role)
+            session.add(user)
+
+        await session.commit()
+        await session.refresh(user)  # ✅ Keep user attached to session
+        return user  # Still attached
+
+
+async def check_user(tg_id,name):
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.tg_id == tg_id))
+        user = result.scalars().first()
+
+        if user:
+            return user
+        else:
+            user = User(tg_id=tg_id, sending=False, name=name, school_number=None, role='User')
             session.add(user)
 
         await session.commit()
@@ -154,19 +169,19 @@ async def get_login1():
         return logins
 
 
-async def delete_login(login):
+async def delete_login(login: str):
     async with async_session() as session:
         async with session.begin():
-            data = await session.execute(select(Login).where(Login.login == login))
-            l = data.scalar_one_or_none()
-            print(l.login,l.id)
-            if l:
-                await session.delete(l)
+            existing_login = await session.execute(select(Login).where(Login.login == login))
+            existing_login = existing_login.scalar_one_or_none()
+            if existing_login:
+                await session.delete(existing_login)
+                await session.commit()
                 return True
             return False
 
 
-async def create_login(login: str, password: str, status: bool, school_number: int, type: str):
+async def create_login(login: str, password: str, status: bool, school_number: str, type: str):
     async with async_session() as session:
         async with session.begin():
             existing_login = await session.execute(select(Login).where(Login.login == login))

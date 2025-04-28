@@ -2,15 +2,13 @@ import asyncio
 import math
 import pytz
 from aiogram import Bot, Dispatcher, F
-from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-from models import get_users, create_user, get_login1, get_users_all, get_user, make_admin, delete_login
+from models import get_users, create_user, get_login1, get_users_all, get_user, make_admin, delete_login, check_user
 from models import init, get_admin, change_school_number
 from request_login import login_main, login
 
@@ -77,7 +75,7 @@ def menu():
 @dp.message(CommandStart())
 async def start(message: Message, state: FSMContext):
     await state.clear()
-    user = await create_user(name=f"{message.from_user.first_name}", tg_id=message.from_user.id)
+    user = await check_user(name=f"{message.from_user.first_name}", tg_id=message.from_user.id)
     if not user.school_number:
         await message.answer(
             f"👋 Assalomu alaykum, hurmatli <b>{message.from_user.first_name}</b>!\n\n"
@@ -86,7 +84,7 @@ async def start(message: Message, state: FSMContext):
             reply_markup=school_keyboard()
         )
         return
-    await message.answer(text='⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀🏠 *Menu*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀', parse_mode='Markdown', reply_markup=menu())
+    await message.answer(text='⠀⠀⠀⠀⠀⠀⠀⠀⠀🏠 *Menu*⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀', parse_mode='Markdown', reply_markup=menu())
 
 
 @dp.callback_query(F.data.startswith('menu'))
@@ -280,10 +278,8 @@ scheduler = AsyncIOScheduler()
 import logging
 
 
-async def send_long_message_by_id(tg_id, text, inline=False):
-    # Maximum length of a message (Telegram limit)
+async def send_long_message_by_id(tg_id, text, inline=False):    # Maximum length of a message (Telegram limit)
     max_length = 4096
-    # Split the message if it's too long
     num_parts = math.ceil(len(text) / max_length)
     try:
         for i in range(num_parts):
@@ -295,9 +291,10 @@ async def send_long_message_by_id(tg_id, text, inline=False):
                                        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                                            [InlineKeyboardButton(text='🚫 O‘chirish', callback_data='t_no')]
                                        ]))
-            await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown")
-    except:
-        pass
+                return
+            await bot.send_message(chat_id=tg_id, text=f"{part.strip()}", parse_mode="HTML")
+    except Exception as e:
+        print(e)
 
 
 
@@ -310,7 +307,7 @@ async def send_daily_update():
         return
 
     school_logins = {}
-
+    print('task1')
     logins1 = log[0].split(",") if log[0] else []
     logins = logins1[:-1]
     for logs in logins:
@@ -318,6 +315,7 @@ async def send_daily_update():
         school_number = parts[1].strip()
         user_type = parts[2].strip().lower()
         login_name = logs.split('_')[0]  # Extract login name
+        print('task2')
 
         if school_number.isdigit():
             school_number = int(school_number)
@@ -328,24 +326,20 @@ async def send_daily_update():
                 school_logins[school_number]["student"].append(login_name)
             elif user_type == "parents":
                 school_logins[school_number]["parent"].append(login_name)
-
+    print('task3')
     logging.info(f"Processed school login failures: {school_logins}")
-
-    # Iterate over users
-
+    print(user_ids)
     for user_id in user_ids:
-        try:
-            chat = await bot.get_chat(user_id.tg_id)
-            print(chat.permissions)
-            message = ""
+            message = "<pre><code class='language-python'>"
+            if not  user_id.school_number:
+                pass
             user_school = int(
                 user_id.school_number) if user_id.school_number and user_id.school_number.isdigit() else None
-            if user_id.role == 'Superuser':
+            if user_id.role == 'Superuser' or int(user_id.tg_id)==6588631008:
                 total_failed = sum(len(v['student']) + len(v['parent']) for v in school_logins.values())
-                print('Superuser', user_id.tg_id)
                 if not total_failed:
                     continue
-
+                print(user_id.tg_id)
                 message += f"❌ Umumiy muvaffaqiyatsiz loginlar soni: {total_failed}\n"
                 message += f"✅ Muvaffaqiyatli loginlar soni: {log[1]}\n\n"
 
@@ -361,7 +355,9 @@ async def send_daily_update():
                         if parent_count:
                             message += f"👨‍👩‍👧‍👦 Ota-onalar: {parent_count} ta login\n" + "\n".join(
                                 login_data["parent"]) + "\n\n"
+                print(message)
                 if message:  # Only send message if there is failed login data
+                    message+='</code></pre>'
                     await send_long_message_by_id(tg_id=user_id.tg_id, text=message)
             elif user_id.role == 'Admin':
                 if user_school in school_logins:
@@ -380,6 +376,7 @@ async def send_daily_update():
                     if parent_logins:
                         message += "👨‍👩‍👧‍👦 Ota-ona loginlari:\n" + "\n".join(parent_logins) + "\n\n"
                 if message:  # Only send message if there is failed login data
+                    message+='</code></pre>'
                     await send_long_message_by_id(
                         tg_id=user_id.tg_id,
                         text=message
@@ -401,6 +398,7 @@ async def send_daily_update():
                         message += f"🎓 O‘quvchilar: {student_count} ta\n"
                     if parent_count:
                         message += f"👨‍👩‍👧‍👦 Ota-onalar: {parent_count} ta\n"
+                    message+='</code></pre>'
                     if message:  # Only send message if there is failed login data
                         await send_long_message_by_id(
                             tg_id=user_id.tg_id,
@@ -408,8 +406,6 @@ async def send_daily_update():
                         )
                 else:
                     continue  # Skip if no failed logins for their school
-        except:
-            pass
 
 
 @dp.message(F.text == 'login')
@@ -422,8 +418,7 @@ async def remover(message:Message):
     admin = await get_admin(message.from_user.id)
     if not admin:
         return
-    data = message.text[6:]
-    print(data)
+    data = message.text[6:].strip()
     response = await delete_login(data)
     if response:
         text = f"Deleted"
