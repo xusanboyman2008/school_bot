@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 import random
 
-from models import create_login, get_login1
+from models import create_login, get_login1, update_login
 
 # List of User-Agent strings to rotate
 user_agents = [
@@ -14,10 +14,11 @@ user_agents = [
 ]
 
 url = "https://login.emaktab.uz"
+
 headers = {
     "Content-Type": "application/x-www-form-urlencoded",
+    'User-Agent': random.choice(user_agents),
 }
-
 
 async def login_request(session, login, user_agent):
     """Helper function to perform a single login request with rotating user-agent"""
@@ -28,8 +29,6 @@ async def login_request(session, login, user_agent):
             status = True
         else:
             status = False
-        await create_login(login=login.login, password=login.password, status=status,
-                           school_number=login.school_number, type=login.type)
         return login.login, login.password, status, login.school_number, login.type
 
 
@@ -37,7 +36,6 @@ async def login():
     wrong_logins = ''
     logins = await get_login1()
     l = 0
-    semaphore = asyncio.Semaphore(20)  # Limit to 20 concurrent requests
     tasks = []
 
     # Rotate User-Agent after every 50 requests globally
@@ -50,17 +48,16 @@ async def login():
                 user_agent_idx = (user_agent_idx + 1) % len(user_agents)
 
             user_agent = user_agents[user_agent_idx]
-            tasks.append(login_request(session=session, login=login, user_agent=user_agent))  # Pass user-agent here
-
+            tasks.append(login_request(session=session, login=login, user_agent=user_agent))  # Pass user-agent here            print('b')
         results = await asyncio.gather(*tasks)
-
+        print('all done')
     for login_data in results:
         login, password, status, school_number, type = login_data
         if not status:
-            wrong_logins += f"🔑 Login: {login} | Password: {password}_{school_number}_{type}\n,"
+            wrong_logins += f"{login}:{password}_{school_number}_{type}\n,"
         else:
             l += 1
-
+    print(wrong_logins)
     return wrong_logins, l
 
 

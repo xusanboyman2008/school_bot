@@ -1,5 +1,7 @@
 import asyncio
 import math
+import os
+
 import pytz
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
@@ -11,15 +13,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from models import get_users, create_user, get_login1, get_users_all, get_user, make_admin, delete_login, check_user
 from models import init, get_admin, change_school_number
 from request_login import login_main, login
+from test1 import main_eschool, successful_logins, wrong_logins
 
 # Load sensitive data from environment variables (use dotenv or similar library)
 # BOT_TOKEN = "7894961736:AAGwAqAzmoMdUYye1-CuU9sf5Db-iKeVdmQ"
-BOT_TOKEN = "7374450108:AAHLEWYlu6R66PUUS2KgPfYotICYa6O7DL8"
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 UZBEKISTAN_TZ = pytz.timezone("Asia/Tashkent")
-
-
 class Data(StatesGroup):
     school_number = State()
 
@@ -176,6 +177,7 @@ async def add(message: Message, state: FSMContext):
         # Call login function (Ensure it returns `failed_logins, successful_logins`)
         user = await get_user(message.from_user.id)
         school_number = user.school_number
+        print(data,type,school_number)
         failed_logins, successful_logins = await login_main(data, type, school_number=school_number)
         failed_count = len(failed_logins)
 
@@ -279,7 +281,7 @@ import logging
 
 
 async def send_long_message_by_id(tg_id, text, inline=False):    # Maximum length of a message (Telegram limit)
-    max_length = 4096
+    max_length = 4085
     num_parts = math.ceil(len(text) / max_length)
     try:
         for i in range(num_parts):
@@ -287,131 +289,64 @@ async def send_long_message_by_id(tg_id, text, inline=False):    # Maximum lengt
             end = start + max_length
             part = text[start:end]
             if inline:
-                await bot.send_message(chat_id=tg_id, text=f"<code>{part.strip()}</code>", parse_mode="Markdown",
-                                       reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                           [InlineKeyboardButton(text='🚫 O‘chirish', callback_data='t_no')]
-                                       ]))
+                await bot.send_message(chat_id=tg_id, text=f"{part.strip()}")
                 return
             await bot.send_message(chat_id=tg_id, text=f"{part.strip()}", parse_mode="HTML")
+
     except Exception as e:
-        print(e)
+        await send_long_message_by_id(tg_id, text, inline=True)
 
 
+async def send_logins():
+    log = await main_eschool()
+    successful_logins_ = log[0]
+    wrong_logins_ = log[1]
+    users = await get_users()
+    for i in users:
+        total_logins = successful_logins_ + len(wrong_logins)
+        await bot.send_message(
+            chat_id=i.tg_id,
+            text=(
+                f"📊 <b>Login statistikasi:</b>\n"
+                f"🔢 Jami loginlar soni: <b>{total_logins}</b>\n"
+                f"✅ Muvaffaqiyatli kirilganlar: <b>{successful_logins_}</b>\n"
+                f"❌ Kira olmaganlar: <b>{len(wrong_logins)}</b>"
+            ),
+            parse_mode="HTML"
+        )
 
-async def send_daily_update():
-    log = await login()
-    user_ids = await get_users()
-    print(log)
-    if not log or not log[0]:  # If there are no failed logins, return
-        logging.info("No failed logins detected. Skipping message sending.")
-        return
+        if i.role == 'Superuser' and wrong_logins:
+            login_and_password = ''
+            last_school_number = None
 
-    school_logins = {}
-    print('task1')
-    logins1 = log[0].split(",") if log[0] else []
-    logins = logins1[:-1]
-    for logs in logins:
-        parts = logs.split("_")
-        school_number = parts[1].strip()
-        user_type = parts[2].strip().lower()
-        login_name = logs.split('_')[0]  # Extract login name
-        print('task2')
+            for k in wrong_logins:
+                try:
+                    username, password, school_number = k.split(':')
+                except ValueError:
+                    continue  # Skip malformed entries
 
-        if school_number.isdigit():
-            school_number = int(school_number)
+                if school_number != last_school_number:
+                    if last_school_number is not None:
+                        login_and_password += "</blockquote>\n"
+                    login_and_password += f"\u200b\u200b🏫 <b>Maktab raqami:</b><i>{school_number}</i>\n<blockquote>"
+                    last_school_number = school_number
 
-            if school_number not in school_logins:
-                school_logins[school_number] = {"student": [], "parent": []}
-            if user_type == "student":
-                school_logins[school_number]["student"].append(login_name)
-            elif user_type == "parents":
-                school_logins[school_number]["parent"].append(login_name)
-    print('task3')
-    logging.info(f"Processed school login failures: {school_logins}")
-    print(user_ids)
-    for user_id in user_ids:
-            message = "<pre><code class='language-python'>"
-            if not  user_id.school_number:
-                pass
-            user_school = int(
-                user_id.school_number) if user_id.school_number and user_id.school_number.isdigit() else None
-            if user_id.role == 'Superuser' or int(user_id.tg_id)==6588631008:
-                total_failed = sum(len(v['student']) + len(v['parent']) for v in school_logins.values())
-                if not total_failed:
-                    continue
-                print(user_id.tg_id)
-                message += f"❌ Umumiy muvaffaqiyatsiz loginlar soni: {total_failed}\n"
-                message += f"✅ Muvaffaqiyatli loginlar soni: {log[1]}\n\n"
+                login_and_password += f"👤 <code>{username}:{password}</code>\n"
 
-                for school, login_data in school_logins.items():
-                    student_count = len(login_data["student"])
-                    parent_count = len(login_data["parent"])
+            login_and_password += "</blockquote>"
+            full_text = "📋 Kira olinmagan loginlar:\n" + login_and_password
 
-                    if student_count or parent_count:  # Only add school if it has failed logins
-                        message += f"⠀⠀⠀⠀⠀⠀⠀⠀🏫 *Maktab {school}*\n"
-                        if student_count:
-                            message += f"🎓 O‘quvchilar: {student_count} ta login\n" + "\n".join(
-                                login_data["student"]) + "\n\n"
-                        if parent_count:
-                            message += f"👨‍👩‍👧‍👦 Ota-onalar: {parent_count} ta login\n" + "\n".join(
-                                login_data["parent"]) + "\n\n"
-                print(message)
-                if message:  # Only send message if there is failed login data
-                    message+='</code></pre>'
-                    await send_long_message_by_id(tg_id=user_id.tg_id, text=message)
-            elif user_id.role == 'Admin':
-                if user_school in school_logins:
-                    student_logins = school_logins[user_school]["student"]
-                    parent_logins = school_logins[user_school]["parent"]
-                    total_failed = len(student_logins) + len(parent_logins)
-                    if total_failed == 0:
-                        continue
+            await send_long_message_by_id(tg_id=i.tg_id, text=full_text)
 
-                    message += f"❌ Muvaffaqiyatsiz loginlar soni: {total_failed}\n"
-                    message += f"✅ Muvaffaqiyatli loginlar soni: {log[1]}\n\n"
-                    message += f"🏫 *Sizning maktabingiz ({user_school})*dagi muvaffaqiyatsiz loginlar:\n"
-
-                    if student_logins:
-                        message += "🎓 O‘quvchi loginlari:\n" + "\n".join(student_logins) + "\n\n"
-                    if parent_logins:
-                        message += "👨‍👩‍👧‍👦 Ota-ona loginlari:\n" + "\n".join(parent_logins) + "\n\n"
-                if message:  # Only send message if there is failed login data
-                    message+='</code></pre>'
-                    await send_long_message_by_id(
-                        tg_id=user_id.tg_id,
-                        text=message
-                    )
-                else:
-                    continue  # Skip if no failed logins for their school
-            elif user_id.role == 'User':
-                if user_school in school_logins:
-                    print('user2', user_id.tg_id)
-                    student_count = len(school_logins[user_school]["student"])
-                    parent_count = len(school_logins[user_school]["parent"])
-                    total_count = student_count + parent_count
-
-                    if student_count == 0 and parent_count == 0:
-                        continue
-
-                    message += f"❌ Maktabingizdagi muvaffaqiyatsiz loginlar soni: {total_count}\n"
-                    if student_count:
-                        message += f"🎓 O‘quvchilar: {student_count} ta\n"
-                    if parent_count:
-                        message += f"👨‍👩‍👧‍👦 Ota-onalar: {parent_count} ta\n"
-                    message+='</code></pre>'
-                    if message:  # Only send message if there is failed login data
-                        await send_long_message_by_id(
-                            tg_id=user_id.tg_id,
-                            text=message, inline=True
-                        )
-                else:
-                    continue  # Skip if no failed logins for their school
+    # Reset the stats
+    wrong_logins.clear()
+    successful_logins_ = 0
 
 
 @dp.message(F.text == 'login')
 async def logins_all(message: Message):
     await message.answer(text='Sending...')
-    await send_daily_update()
+    await send_logins()
 
 @dp.message(F.text.startswith('remove'))
 async def remover(message:Message):
@@ -486,10 +421,11 @@ async def test_bot():
 
 
 async def main2():
+    # await main_eschool()
     scheduler.add_job(
-        send_daily_update,
+        send_logins,
         trigger="cron",
-        hour=8,
+        hour=3,
         minute=0,
         timezone=UZBEKISTAN_TZ,
     )

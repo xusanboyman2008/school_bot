@@ -150,7 +150,7 @@ async def change_school_number(tg_id, school_number):
 
 async def get_login_all():
     async with async_session() as session:
-        result = await session.execute(select(Login))
+        result = await session.execute(select(Login).order_by(Login.school_number))
         logins = result.scalars().all()
         return logins
 
@@ -173,7 +173,7 @@ async def delete_login(login: str):
     async with async_session() as session:
         async with session.begin():
             existing_login = await session.execute(select(Login).where(Login.login == login))
-            existing_login = existing_login.scalar_one_or_none()
+            existing_login = existing_login.scalars().first()
             if existing_login:
                 await session.delete(existing_login)
                 await session.commit()
@@ -197,6 +197,16 @@ async def create_login(login: str, password: str, status: bool, school_number: s
                 session.add(new_login)
                 await session.commit()
                 return new_login
+async def update_login(login: str,status: bool):
+    async with async_session() as session:
+        async with session.begin():
+            existing_login = await session.execute(select(Login).where(Login.login == login))
+            existing_login = existing_login.scalar_one_or_none()
+            if existing_login:
+                existing_login.status = status
+                session.add(existing_login)
+                await session.commit()
+                return existing_login
 
 async def init():
     async with engine.begin() as conn:

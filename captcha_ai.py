@@ -1,28 +1,22 @@
-from openai import OpenAI
+import cv2
+import pytesseract
+from PIL import Image
+import numpy as np
+import re
 
-client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key="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",
-)
+def preprocess_image(image_path='captcha_debug.png'):
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    _, thresh = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    denoised = cv2.medianBlur(thresh, 3)
+    return denoised
 
-def read_file(file_path):
-    with open(file_path, 'r') as file:
-        return file.read()
+def extract_numbers_from_clean_image(image_path):
+    processed = preprocess_image(image_path)
 
-# File path of the text file you want to process
-file_path = "captcha_debug.png"  # Replace with the path to your file
+    # Save to temp file to read with PIL for pytesseract
+    temp_path = "temp_clean.png"
+    cv2.imwrite(temp_path, processed)
 
-# Read file content
-file_content = read_file(file_path)
-
-completion = client.chat.completions.create(
-  extra_body={},
-  model="openai/gpt-4o-search-preview",
-  messages=[
-    {
-      "role": "user",
-      "content":
-    }
-  ]
-)
-print(completion.choices[0].message.content)
+    text = pytesseract.image_to_string(Image.open(temp_path), config='--psm 7')  # PSM 7 = single line
+    numbers = re.findall(r'\d+', text)
+    return ''.join(numbers)  # Return as single string
