@@ -116,7 +116,7 @@ async def main_eschool():
     login = await get_login_all()
     a= 0
     str = datetime.datetime.now()
-    for i in login[100:120]:
+    for i in login:
         a+=1
         print('total logins: ',a)
         print('login', i.login, 'password', i.password)
