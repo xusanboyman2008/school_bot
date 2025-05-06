@@ -1,7 +1,6 @@
 import cv2
 import pytesseract
 from PIL import Image
-import numpy as np
 import re
 
 def preprocess_image(image_path='captcha_debug.png'):

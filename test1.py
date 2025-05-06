@@ -3,7 +3,6 @@ import time
 from io import BytesIO
 
 import requests
-from Demos.win32ts_logoff_disconnected import username
 from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
