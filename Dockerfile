@@ -1,20 +1,35 @@
 FROM python:3.12-slim
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    wget unzip gnupg ca-certificates \
-    libnss3 libxss1 libappindicator1 libindicator7 \
-    fonts-liberation libatk-bridge2.0-0 libgtk-3-0 libx11-xcb1 \
-    xdg-utils curl && \
-    rm -rf /var/lib/apt/lists/*
+    chromium-driver \
+    chromium \
+    unzip \
+    wget \
+    gnupg \
+    curl \
+    ca-certificates \
+    fonts-liberation \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libxss1 \
+    libasound2 \
+    libgbm-dev \
+    libgtk-3-0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt install -y ./google-chrome-stable_current_amd64.deb && \
-    rm google-chrome-stable_current_amd64.deb
+# Set environment variables for Chromium
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 
-# Install ChromeDriver
-RUN pip install webdriver-manager selenium
-RUN pip install -r requirements.txt
-# Set display port to avoid errors
-ENV DISPLAY=:99
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy your app
+COPY . /app
+WORKDIR /app
+
+# Run app
+CMD ["python", "main.py"]
