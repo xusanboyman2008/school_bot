@@ -8,8 +8,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
-
 from captcha_ai import extract_numbers_from_clean_image
 from models import get_login_all
 from selenium.webdriver.chrome.options import Options
@@ -21,7 +19,10 @@ options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--disable-gpu')
 options.add_argument('--disable-software-rasterizer')
 options.add_argument('--remote-debugging-port=9222')  # this avoids DevToolsActivePort error
-
+driver = webdriver.Chrome(
+    service=Service("/usr/bin/chromedriver"),
+    options=options
+)
 
 
 
@@ -36,8 +37,10 @@ def eschool(login, password, school):
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
     # options.add_argument('--headless')
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
+    driver = webdriver.Chrome(
+        service=Service("/usr/bin/chromedriver"),
+        options=options
+    )
     def is_logged_in():
         time.sleep(0.3)
         if driver.current_url == "https://login.emaktab.uz/" or driver.current_url == "https://login.emaktab.uz/login/":
