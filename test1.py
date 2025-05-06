@@ -16,8 +16,7 @@ from models import get_login_all
 options = webdriver.ChromeOptions()
 options.add_argument('--start-maximized')
 options.add_argument('--headless')
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
+driver = webdriver.Chrome(service=Service("/usr/lib/chromium/chromedriver"), options=options)
 
 
 
