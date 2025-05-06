@@ -8,10 +8,10 @@ from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.chromium.service import ChromiumService
 from webdriver_manager.chrome import ChromeDriverManager
 from captcha_ai import extract_numbers_from_clean_image
 from models import get_login_all
-from selenium.webdriver.chromium.service import ChromiumService
 
 successful_logins = 0
 wrong_logins = []
@@ -20,11 +20,17 @@ def eschool(login, password, school):
     global successful_logins, wrong_logins
 
     options = webdriver.ChromeOptions()
-    options.add_argument('--start-maximized')
     options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
 
-    # Use ChromiumService instead of ChromeService
-    driver = webdriver.Chrome(ChromiumService(ChromeDriverManager().install()), options)
+    # ✅ Use Chromium browser binary path (adjust if needed)
+    options.binary_location = '/usr/bin/chromium-browser'  # or '/usr/bin/chromium'
+
+    # ✅ Use ChromiumService instead of ChromeService
+    service = ChromiumService(executable_path=ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
 
     def is_logged_in():
         time.sleep(0.3)
@@ -110,5 +116,3 @@ async def main_eschool():
     print("❌ Failed logins:", wrong_logins)
     return successful_logins, wrong_logins
 
-if __name__=='__main__':
-    asyncio.run(main_eschool())
