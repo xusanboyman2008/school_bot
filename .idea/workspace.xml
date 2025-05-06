@@ -45,12 +45,12 @@
     &quot;assignee&quot;: &quot;xusanboyman2008&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/xusanboyman2008/school_logins.git&quot;,
-    &quot;accountId&quot;: &quot;77e3fe5a-2c86-4514-95f5-3b9e5274193c&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/xusanboyman2008/school_bot",
+    "accountId": "eaf99e37-addc-4794-9bd1-199624381166"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
@@ -244,7 +244,7 @@
       <workItem from="1745941552569" duration="11342000" />
       <workItem from="1745969657913" duration="7842000" />
       <workItem from="1746121928397" duration="172000" />
-      <workItem from="1746336098933" duration="26760000" />
+      <workItem from="1746336098933" duration="27559000" />
     </task>
     <task id="LOCAL-00018" summary="as">
       <option name="closed" value="true" />
