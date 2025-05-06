@@ -13,9 +13,12 @@ from webdriver_manager.chrome import ChromeDriverManager
 from captcha_ai import extract_numbers_from_clean_image
 from models import get_login_all
 
-options = webdriver.ChromeOptions()
-options.add_argument('--start-maximized')
+
+options = Options()
 options.add_argument('--headless')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
+options.binary_location = "/usr/bin/chromium"
 driver = webdriver.Chrome(service=Service("/usr/lib/chromium/chromedriver"), options=options)
 
 
