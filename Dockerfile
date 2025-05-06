@@ -26,6 +26,9 @@ ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y chromium chromium-driver
+
+ENV CHROME_BIN=/usr/bin/chromium
 
 # Copy your app
 COPY . /app
