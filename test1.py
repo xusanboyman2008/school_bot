@@ -9,17 +9,19 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-
+from selenium.webdriver.chrome.options import Options
 from captcha_ai import extract_numbers_from_clean_image
 from models import get_login_all
 
-options = webdriver.ChromeOptions()
-options.binary_location = "/usr/bin/chromium"  # <- ensure this is set
-options.add_argument("--headless")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
+options = Options()
+options.add_argument('--headless')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
 
-driver = webdriver.Chrome(service=Service("/usr/lib/chromium/chromedriver"), options=options)
+driver = webdriver.Chrome(
+    service=Service("/usr/bin/chromedriver"),
+    options=options
+)
 
 
 

@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fe557ad3-ce22-4938-a550-81d3aa83cdff" name="Changes" comment="." />
+    <list default="true" id="fe557ad3-ce22-4938-a550-81d3aa83cdff" name="Changes" comment=".">
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -242,7 +244,7 @@
       <workItem from="1745941552569" duration="11342000" />
       <workItem from="1745969657913" duration="7842000" />
       <workItem from="1746121928397" duration="172000" />
-      <workItem from="1746336098933" duration="29667000" />
+      <workItem from="1746336098933" duration="29967000" />
     </task>
     <task id="LOCAL-00018" summary="as">
       <option name="closed" value="true" />

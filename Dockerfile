@@ -1,32 +1,35 @@
 FROM python:3.12-slim
 
-# Install Chromium and Chromedriver
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    chromium \
     chromium-driver \
+    chromium \
+    unzip \
+    wget \
+    gnupg \
+    curl \
+    ca-certificates \
     fonts-liberation \
     libnss3 \
     libatk-bridge2.0-0 \
     libxss1 \
     libasound2 \
-    libgbm1 \
+    libgbm-dev \
     libgtk-3-0 \
-    wget \
-    curl \
-    unzip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables so Selenium can find Chrome/Chromedriver
+# Set environment variables for Chromium
 ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROMEDRIVER_PATH=/usr/lib/chromium/chromedriver
+ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code
+# Copy your app
 COPY . /app
 WORKDIR /app
 
-# Run your app
+# Run app
 CMD ["python", "main.py"]
