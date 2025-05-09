@@ -69,13 +69,12 @@ def eschool(login, password, school):
             successful_logins += 1
         else:
             code = solve_captcha_if_needed()
-            print(f"🔁 Login failed. Retrying with CAPTCHA code: {code}")
             captcha_input = driver.find_element(By.NAME, 'Captcha.Input')
-
+            print(f"🔁 Login failed. Retrying with CAPTCHA code: {code}")
             if not captcha_input.is_displayed():
+                print(f"🔁 Login failed and no captcha found. Retrying with CAPTCHA code: {code}")
                 wrong_logins.append(f"{login}:{password}:{school}")
                 return
-
             captcha_input.clear()
             captcha_input.send_keys(code)
             driver.find_element(By.CSS_SELECTOR, "[data-test-id='login-button']").click()
@@ -98,12 +97,15 @@ async def main_eschool():
     a = 0
     start_time = datetime.datetime.now()
 
-    for i in login_data:
+    for i in login_data[60:]:
         a += 1
-        print('total logins:', a)
+        print('total logins:', a,'wrong logins: ',len(wrong_logins))
         print('login:', i.login, 'password:', i.password)
         eschool(i.login, i.password, i.school_number)
         print('time spent:', datetime.datetime.now() - start_time, 'for', a)
 
     print("❌ Failed logins:", wrong_logins)
     return successful_logins, wrong_logins
+
+if __name__ == '__main__':
+    asyncio.run(main_eschool())

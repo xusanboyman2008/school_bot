@@ -6,6 +6,7 @@ pillow
 selenium
 webdriver-manager
 SQLAlchemy
+undetected-chromedriver
 aiohttp
 opencv-python
 pytesseract
