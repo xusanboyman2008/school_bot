@@ -107,5 +107,3 @@ async def main_eschool():
     print("❌ Failed logins:", wrong_logins)
     return successful_logins, wrong_logins
 
-if __name__ == '__main__':
-    asyncio.run(main_eschool())

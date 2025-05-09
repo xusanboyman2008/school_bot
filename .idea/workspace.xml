@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fe557ad3-ce22-4938-a550-81d3aa83cdff" name="Changes" comment=".">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/captcha_debug.png" beforeDir="false" afterPath="$PROJECT_DIR$/captcha_debug.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp_clean.png" beforeDir="false" afterPath="$PROJECT_DIR$/temp_clean.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test1.py" beforeDir="false" afterPath="$PROJECT_DIR$/test1.py" afterDir="false" />
-    </list>
+    <list default="true" id="fe557ad3-ce22-4938-a550-81d3aa83cdff" name="Changes" comment="." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -251,7 +245,7 @@
       <workItem from="1746336098933" duration="31121000" />
       <workItem from="1746540642692" duration="7003000" />
       <workItem from="1746724750025" duration="1701000" />
-      <workItem from="1746788316532" duration="1722000" />
+      <workItem from="1746788316532" duration="2142000" />
     </task>
     <task id="LOCAL-00018" summary="as">
       <option name="closed" value="true" />
