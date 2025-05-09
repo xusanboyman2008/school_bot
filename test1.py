@@ -23,6 +23,10 @@ def eschool(login, password, school):
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--remote-debugging-port=9222')
     options.add_argument('--disable-gpu')
+    options.add_argument('--disable-popup-blocking')
+    options.add_argument('--disable-notifications')
+    options.add_argument('--allow-running-insecure-content')
+    options.add_argument('--enable-automation')
     options.add_argument('--disable-software-rasterizer')
     options.add_argument('--disable-features=VizDisplayCompositor')  # Disable specific features
     options.add_argument('--disable-extensions')  # Disable Chrome extensions
