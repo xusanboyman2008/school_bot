@@ -97,7 +97,7 @@ async def main_eschool():
     a = 0
     start_time = datetime.datetime.now()
 
-    for i in login_data[60:]:
+    for i in login_data:
         a += 1
         print('total logins:', a,'wrong logins: ',len(wrong_logins))
         print('login:', i.login, 'password:', i.password)
@@ -107,3 +107,5 @@ async def main_eschool():
     print("❌ Failed logins:", wrong_logins)
     return successful_logins, wrong_logins
 
+if __name__ == '__main__':
+    asyncio.run(main_eschool())
