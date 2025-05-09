@@ -7,8 +7,8 @@ ENV PATH="/usr/local/bin/python3.10:${PATH}"
 
 # Update and install required dependencies
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y \
-    chromium \
-    chromium-driver \
+    chromium=136.0.7103.92-1 \
+    chromium-driver=136.0.7103.92-1 \
     libglib2.0-0 \
     libnss3 \
     libgdk-pixbuf2.0-0 \
